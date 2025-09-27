@@ -26,7 +26,6 @@ public class TaskController {
         this.taskService = taskService;
     }
 
-    // Convert Task entity to DTO
     private TaskResponse toResponse(Task t) {
         String created = t.getCreatedAt() != null ? t.getCreatedAt().toString() : null;
         String updated = t.getUpdatedAt() != null ? t.getUpdatedAt().toString() : null;
@@ -34,7 +33,6 @@ public class TaskController {
                 t.getStatus().name(), created, updated);
     }
 
-    // Create a new task
     @PostMapping
     public ResponseEntity<TaskResponse> create(@Valid @RequestBody TaskRequest req, Principal principal) {
         logger.info("User '{}' is creating a new task with title '{}'", principal.getName(), req.getTitle());
@@ -43,7 +41,6 @@ public class TaskController {
         return ResponseEntity.ok(toResponse(created));
     }
 
-    // Get all tasks for the authenticated user
     @GetMapping
     public ResponseEntity<List<TaskResponse>> getAll(Principal principal) {
         logger.info("User '{}' is fetching all tasks", principal.getName());
@@ -55,7 +52,6 @@ public class TaskController {
         return ResponseEntity.ok(list);
     }
 
-    // Get a specific task by ID
     @GetMapping("/{id}")
     public ResponseEntity<TaskResponse> getById(@PathVariable Long id, Principal principal) {
         logger.info("User '{}' is fetching task with id {}", principal.getName(), id);
@@ -63,7 +59,6 @@ public class TaskController {
         return ResponseEntity.ok(toResponse(t));
     }
 
-    // Update a task using its ID
     @PutMapping("/{id}")
     public ResponseEntity<TaskResponse> update(@PathVariable Long id, @Valid @RequestBody TaskRequest req, Principal principal) {
         logger.info("User '{}' is updating task id {}", principal.getName(), id);
@@ -72,7 +67,6 @@ public class TaskController {
         return ResponseEntity.ok(toResponse(updated));
     }
 
-    // Delete a task using its ID
     @DeleteMapping("/{id}")
     public ResponseEntity<String> delete(@PathVariable Long id, Principal principal) {
         logger.warn("User '{}' is deleting task id {}", principal.getName(), id);

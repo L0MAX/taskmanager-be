@@ -8,7 +8,6 @@ public class TaskRequest {
 
     private String description;
 
-    // optional: "PENDING" or "COMPLETED"
     private String status;
 
     public TaskRequest() {}
