@@ -41,7 +41,6 @@ class AuthControllerTest {
         MockitoAnnotations.openMocks(this);
     }
 
-    // ===== REGISTER TESTS =====
     @Test
     void register_UserAlreadyExists_ReturnsErrorMessage() {
         RegisterRequest request = new RegisterRequest();
@@ -74,7 +73,6 @@ class AuthControllerTest {
         ));
     }
 
-    // ===== LOGIN TESTS =====
     @Test
     void login_ValidCredentials_ReturnsToken() {
         LoginRequest request = new LoginRequest();

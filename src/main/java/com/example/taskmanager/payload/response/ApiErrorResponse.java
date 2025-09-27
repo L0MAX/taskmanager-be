@@ -13,7 +13,6 @@ public class ApiErrorResponse {
         this.timestamp = LocalDateTime.now();
     }
 
-    // getters and setters
     public int getStatus() { return status; }
     public void setStatus(int status) { this.status = status; }
     public String getMessage() { return message; }

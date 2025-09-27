@@ -30,7 +30,6 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
-    // Register new user
     @PostMapping("/register")
     public String register(@RequestBody RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -43,7 +42,6 @@ public class AuthController {
         return "User registered successfully!";
     }
 
-    // Authenticate user and return the token
     @PostMapping("/login")
     public AuthResponse login(@RequestBody LoginRequest request) {
         authenticationManager.authenticate(
