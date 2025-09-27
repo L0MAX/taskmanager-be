@@ -1,9 +1,9 @@
 package com.example.taskmanager.controller;
 
 import com.example.taskmanager.model.User;
-import com.example.taskmanager.payload.LoginRequest;
-import com.example.taskmanager.payload.RegisterRequest;
-import com.example.taskmanager.payload.AuthResponse;
+import com.example.taskmanager.payload.request.LoginRequest;
+import com.example.taskmanager.payload.request.RegisterRequest;
+import com.example.taskmanager.payload.response.AuthResponse;
 import com.example.taskmanager.repository.UserRepository;
 import com.example.taskmanager.security.JwtUtil;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -30,6 +30,7 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
+    // Register new user
     @PostMapping("/register")
     public String register(@RequestBody RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -42,6 +43,7 @@ public class AuthController {
         return "User registered successfully!";
     }
 
+    // Authenticate user and return the token
     @PostMapping("/login")
     public AuthResponse login(@RequestBody LoginRequest request) {
         authenticationManager.authenticate(
