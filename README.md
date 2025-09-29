@@ -120,6 +120,7 @@ The server runs on **port 8080** by default.
 **Note:** Include `Authorization: Bearer <JWT>` header for all `/tasks/**` endpoints.
 
 ---
+**Swagger:** Swagger API UI URL http://localhost:8080/swagger-ui/index.html#/tasks/create
 
 ## Testing
 
