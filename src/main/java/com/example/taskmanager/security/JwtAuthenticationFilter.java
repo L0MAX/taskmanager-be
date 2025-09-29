@@ -31,36 +31,49 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-        String authHeader = request.getHeader("Authorization");
-        logger.debug("JwtFilter: {} {} Authorization={}", request.getMethod(), request.getRequestURI(), authHeader);
+protected void doFilterInternal(HttpServletRequest request,
+                                HttpServletResponse response,
+                                FilterChain filterChain) throws ServletException, IOException {
 
-        try {
-            if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
-                logger.debug("JwtFilter: Token present, validating...");
-                if (jwtUtil.validateToken(token)) {
-                    String username = jwtUtil.getUsernameFromToken(token);
-                    logger.debug("JwtFilter: token valid, username={}", username);
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-                    UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                    logger.debug("JwtFilter: SecurityContext set for user={}", username);
-                } else {
-                    logger.warn("JwtFilter: token validation failed");
-                }
-            } else {
-                logger.debug("JwtFilter: no Bearer token found");
-            }
-        } catch (Exception ex) {
-            logger.error("JwtFilter: exception while processing token", ex);
-        }
-
+    String path = request.getServletPath();
+    String method = request.getMethod();
+    
+    // Skip preflight OPTIONS requests
+    if ("OPTIONS".equalsIgnoreCase(method)) {
         filterChain.doFilter(request, response);
+        return;
+    }
+
+    // Skip authentication for public endpoints
+    if (path.startsWith("/auth/register") || path.startsWith("/auth/login")) {
+        filterChain.doFilter(request, response);
+        return;
+    }
+
+    String authHeader = request.getHeader("Authorization");
+    logger.debug("JwtFilter: {} {} Authorization={}", method, path, authHeader);
+
+    try {
+        if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            if (jwtUtil.validateToken(token)) {
+                String username = jwtUtil.getUsernameFromToken(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            } else {
+                logger.warn("JwtFilter: token validation failed");
+            }
+        } else {
+            logger.debug("JwtFilter: no Bearer token found");
+        }
+    } catch (Exception ex) {
+        logger.error("JwtFilter: exception while processing token", ex);
+    }
+
+    filterChain.doFilter(request, response);
     }
 }

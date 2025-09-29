@@ -3,15 +3,18 @@ package com.example.taskmanager.controller;
 import com.example.taskmanager.model.User;
 import com.example.taskmanager.payload.request.LoginRequest;
 import com.example.taskmanager.payload.request.RegisterRequest;
+import com.example.taskmanager.payload.response.ApiResponse;
 import com.example.taskmanager.payload.response.AuthResponse;
 import com.example.taskmanager.repository.UserRepository;
 import com.example.taskmanager.security.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -19,10 +22,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)
 class AuthControllerTest {
-
-    @InjectMocks
-    private AuthController authController;
 
     @Mock
     private UserRepository userRepository;
@@ -36,73 +37,98 @@ class AuthControllerTest {
     @Mock
     private JwtUtil jwtUtil;
 
+    @InjectMocks
+    private AuthController authController;
+
+    @Captor
+    private ArgumentCaptor<User> userCaptor;
+
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void register_UserAlreadyExists_ReturnsErrorMessage() {
-        RegisterRequest request = new RegisterRequest();
-        request.setUsername("existingUser");
-        request.setPassword("password");
+    void register_NewUser_SavesAndReturnsSuccess() {
+       
+        RegisterRequest req = new RegisterRequest();
+        req.setUsername("alice");
+        req.setPassword("secret");
 
-        when(userRepository.findByUsername("existingUser")).thenReturn(Optional.of(new User()));
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("secret")).thenReturn("encoded-secret");
 
-        String response = authController.register(request);
+        ApiResponse response = authController.register(req);
 
-        assertEquals("User already exists!", response);
+        assertNotNull(response);
+        assertTrue(response.isSuccess());
+        assertEquals("User registered successfully!", response.getMessage());
+
+        verify(userRepository).save(userCaptor.capture());
+        User saved = userCaptor.getValue();
+        assertEquals("alice", saved.getUsername());
+        assertEquals("encoded-secret", saved.getPassword());
+
+        verify(passwordEncoder).encode("secret");
+    }
+
+    @Test
+    void register_ExistingUser_ReturnsFailure() {
+       
+        RegisterRequest req = new RegisterRequest();
+        req.setUsername("bob");
+        req.setPassword("pw");
+
+        when(userRepository.findByUsername("bob")).thenReturn(Optional.of(new User()));
+
+        ApiResponse response = authController.register(req);
+
+        assertNotNull(response);
+        assertFalse(response.isSuccess());
+        assertEquals("User already exists!", response.getMessage());
+
         verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void register_NewUser_SuccessfulRegistration() {
-        RegisterRequest request = new RegisterRequest();
-        request.setUsername("newUser");
-        request.setPassword("password");
-
-        when(userRepository.findByUsername("newUser")).thenReturn(Optional.empty());
-        when(passwordEncoder.encode("password")).thenReturn("encodedPassword");
-
-        String response = authController.register(request);
-
-        assertEquals("User registered successfully!", response);
-        verify(userRepository, times(1)).save(argThat(user ->
-                user.getUsername().equals("newUser") &&
-                user.getPassword().equals("encodedPassword")
-        ));
+        verify(passwordEncoder, never()).encode(anyString());
     }
 
     @Test
     void login_ValidCredentials_ReturnsToken() {
-        LoginRequest request = new LoginRequest();
-        request.setUsername("user1");
-        request.setPassword("password");
+        
+        LoginRequest req = new LoginRequest();
+        req.setUsername("carol");
+        req.setPassword("pw");
 
-        when(jwtUtil.generateToken("user1")).thenReturn("fake-jwt-token");
+        Authentication fakeAuth = mock(Authentication.class);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(fakeAuth);
 
-        AuthResponse response = authController.login(request);
+        when(jwtUtil.generateToken("carol")).thenReturn("jwt-token-123");
 
-        assertNotNull(response);
-        assertEquals("fake-jwt-token", response.getToken());
+        AuthResponse resp = authController.login(req);
 
-        verify(authenticationManager, times(1))
-                .authenticate(any(UsernamePasswordAuthenticationToken.class));
+        assertNotNull(resp);
+        assertEquals("jwt-token-123", resp.getToken());
+
+        verify(authenticationManager).authenticate(argThat(token ->
+                token instanceof UsernamePasswordAuthenticationToken &&
+                "carol".equals(((UsernamePasswordAuthenticationToken) token).getPrincipal())
+        ));
+        verify(jwtUtil).generateToken("carol");
     }
 
     @Test
-    void login_InvalidCredentials_ThrowsException() {
-        LoginRequest request = new LoginRequest();
-        request.setUsername("user1");
-        request.setPassword("wrongPassword");
+    void login_InvalidCredentials_AuthenticationThrows_exceptionPropagates() {
+      
+        LoginRequest req = new LoginRequest();
+        req.setUsername("dave");
+        req.setPassword("bad");
 
-        doThrow(new BadCredentialsException("Invalid credentials"))
-                .when(authenticationManager)
-                .authenticate(any(UsernamePasswordAuthenticationToken.class));
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new BadCredentialsException("Bad creds"));
 
-        assertThrows(BadCredentialsException.class, () -> authController.login(request));
+        BadCredentialsException ex = assertThrows(BadCredentialsException.class, () -> authController.login(req));
+        assertEquals("Bad creds", ex.getMessage());
 
-        verify(authenticationManager, times(1))
-                .authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(jwtUtil, never()).generateToken(anyString());
     }
 }

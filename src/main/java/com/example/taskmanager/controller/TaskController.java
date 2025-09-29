@@ -2,8 +2,11 @@ package com.example.taskmanager.controller;
 
 import com.example.taskmanager.model.Task;
 import com.example.taskmanager.payload.request.TaskRequest;
+import com.example.taskmanager.payload.response.ApiResponse;
 import com.example.taskmanager.payload.response.TaskResponse;
 import com.example.taskmanager.service.TaskService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +19,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tasks")
+@Tag(name = "tasks", description = "Tasks CRUD endpoints")
 public class TaskController {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskController.class);
@@ -68,10 +72,11 @@ public class TaskController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Long id, Principal principal) {
-        logger.warn("User '{}' is deleting task id {}", principal.getName(), id);
-        taskService.deleteTask(id, principal.getName());
-        logger.info("Task id {} deleted successfully by user '{}'", id, principal.getName());
-        return ResponseEntity.ok("Task deleted successfully");
-    }
+public ResponseEntity<ApiResponse> delete(@PathVariable Long id, Principal principal) {
+    logger.warn("User '{}' is deleting task id {}", principal.getName(), id);
+    taskService.deleteTask(id, principal.getName());
+    logger.info("Task id {} deleted successfully by user '{}'", id, principal.getName());
+    ApiResponse response = new ApiResponse(true, "Task deleted successfully");
+    return ResponseEntity.ok(response);
+}
 }

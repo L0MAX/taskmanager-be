@@ -3,9 +3,13 @@ package com.example.taskmanager.controller;
 import com.example.taskmanager.model.User;
 import com.example.taskmanager.payload.request.LoginRequest;
 import com.example.taskmanager.payload.request.RegisterRequest;
+import com.example.taskmanager.payload.response.ApiResponse;
 import com.example.taskmanager.payload.response.AuthResponse;
 import com.example.taskmanager.repository.UserRepository;
 import com.example.taskmanager.security.JwtUtil;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "auth", description = "Authentication endpoints")
 public class AuthController {
 
     private final UserRepository userRepository;
@@ -31,16 +36,19 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public String register(@RequestBody RegisterRequest request) {
+    public ApiResponse register(@RequestBody RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            return "User already exists!";
+            return new ApiResponse(false, "User already exists!");
         }
+
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         userRepository.save(user);
-        return "User registered successfully!";
+
+        return new ApiResponse(true, "User registered successfully!");
     }
+
 
     @PostMapping("/login")
     public AuthResponse login(@RequestBody LoginRequest request) {

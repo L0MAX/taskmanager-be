@@ -3,6 +3,7 @@ package com.example.taskmanager.controller;
 import com.example.taskmanager.model.Task;
 import com.example.taskmanager.model.User;
 import com.example.taskmanager.payload.request.TaskRequest;
+import com.example.taskmanager.payload.response.ApiResponse;
 import com.example.taskmanager.payload.response.TaskResponse;
 import com.example.taskmanager.service.TaskService;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,11 +15,15 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class TaskControllerTest {
 
     @InjectMocks
@@ -34,7 +39,6 @@ class TaskControllerTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         when(principal.getName()).thenReturn("testUser");
 
         mockUser = new User();
@@ -155,9 +159,11 @@ class TaskControllerTest {
     void deleteTask_Success() {
         doNothing().when(taskService).deleteTask(1L, "testUser");
 
-        String response = taskController.delete(1L, principal).getBody();
+        ApiResponse response = taskController.delete(1L, principal).getBody();
 
-        assertEquals("Task deleted successfully", response);
+        assertNotNull(response);
+        assertTrue(response.isSuccess());                       
+        assertEquals("Task deleted successfully", response.getMessage());
         verify(taskService, times(1)).deleteTask(1L, "testUser");
     }
 }
